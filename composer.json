@@ -1,0 +1,61 @@
+{
+    "name": "stichtingsd/soft-deleteable-extension-bundle",
+    "description": "Extension to Gedmo Softdeleteable.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sherin Bloemendaal",
+            "email": "sherin@stichtingsd.nl",
+            "homepage": "https://stichtingsd.nl"
+        }
+    ],
+    "scripts": {
+        "cs-fixer": "php-cs-fixer fix --config=.php-cs-fixer.dist.php"
+    },
+    "keywords": [
+        "softdeleteable",
+        "softdeleteable-bundle",
+        "softdeleteable cascade",
+        "cascade",
+        "setnull",
+        "symfony",
+        "attributes"
+    ],
+    "require": {
+        "php": ">=8.1",
+        "doctrine/common": "^2.13 || ^3.0",
+        "doctrine/doctrine-bundle": "^2.7",
+        "doctrine/orm": "^2.7",
+        "gedmo/doctrine-extensions": "^3.4",
+        "symfony/framework-bundle": "^6.0",
+        "symfony/property-access": "^6.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "symfony/phpunit-bridge": "^6.0",
+        "doctrine/cache": "^2.0",
+        "doctrine/dbal": "^3.2",
+        "friendsofphp/php-cs-fixer": "dev-master"
+    },
+    "minimum-stability": "dev",
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1-dev"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "StichtingSD\\SoftDeleteableExtensionBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "StichtingSD\\SoftDeleteableExtensionBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "bin-dir": "bin",
+        "sort-packages": true
+    }
+}
