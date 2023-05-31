@@ -199,29 +199,6 @@ class OnSoftDeleteEventSubscriber implements EventSubscriber
         $gedmoArguments = $gedmoAttributes[0]->getArguments();
         $fieldName = $gedmoArguments['fieldName'];
 
-        // Grab all the id's that are going to be updated, so we can schedule them for update.
-        $objectsAssociatedToEventObject = $objectRepository->createQueryBuilder('e')
-            ->select('e.id')
-            ->andWhere("e.{$reflProperty->getName()} = :eventObject")
-            ->setParameter('eventObject', $eventObject)
-            ->getQuery()
-            ->getSingleColumnResult()
-        ;
-
-        // Trigger event if the cascaded entity also has onSoftDelete cascade.
-        foreach ($objectsAssociatedToEventObject as $id) {
-            $objectProxy = $objectManager->getReference($reflClass->getName(), $id);
-            $objectManager->getEventManager()->dispatchEvent(
-                GedmoSoftDeleteableListener::PRE_SOFT_DELETE,
-                new LifecycleEventArgs($objectProxy, $objectManager)
-            );
-
-            $objectManager->getEventManager()->dispatchEvent(
-                GedmoSoftDeleteableListener::POST_SOFT_DELETE,
-                new LifecycleEventArgs($objectProxy, $objectManager)
-            );
-        }
-
         // Actually update the entities, doing it this way won't cause memory problems.
         $deletedAt = new \DateTimeImmutable();
         $objectRepository->createQueryBuilder('e')
@@ -235,16 +212,36 @@ class OnSoftDeleteEventSubscriber implements EventSubscriber
             ->execute()
         ;
 
+        // Grab all the id's that are going to be updated, so we can schedule them for update.
+        $objectsAssociatedToEventObject = $objectRepository->createQueryBuilder('e')
+            ->select('e.id')
+            ->andWhere("e.{$reflProperty->getName()} = :eventObject")
+            ->setParameter('eventObject', $eventObject)
+            ->getQuery()
+            ->iterate()
+        ;
+
         /**
          * @var UnitOfWork $uow
          */
         $uow = $objectManager->getUnitOfWork();
         // Use the getReference() method to fetch a partial object for each entity
-        foreach ($objectsAssociatedToEventObject as $id) {
+        foreach ($objectsAssociatedToEventObject as $row) {
+            $id = $row[0];
             $objectProxy = $objectManager->getReference($reflClass->getName(), $id);
+            $objectManager->getEventManager()->dispatchEvent(
+                GedmoSoftDeleteableListener::PRE_SOFT_DELETE,
+                new LifecycleEventArgs($objectProxy, $objectManager)
+            );
+
             $uow->scheduleExtraUpdate($objectProxy, [
                 $fieldName => [null, $deletedAt],
             ]);
+
+            $objectManager->getEventManager()->dispatchEvent(
+                GedmoSoftDeleteableListener::POST_SOFT_DELETE,
+                new LifecycleEventArgs($objectProxy, $objectManager)
+            );
         }
     }
 }
