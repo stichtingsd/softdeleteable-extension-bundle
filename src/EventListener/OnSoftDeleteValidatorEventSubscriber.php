@@ -74,17 +74,17 @@ class OnSoftDeleteValidatorEventSubscriber implements EventSubscriber
     {
         $type = $associationMapping['type'];
         if (!\in_array($type, static::SUPPORTED_ASSOCIATION_TYPES, true)) {
-            $associationHumanReadable = static::ASSOCIATION_TO_STRING_MAP[$type] ?? \sprintf('Unknown type: %d', $type);
-            $associationMapHumanReadable = \implode(', ', \array_keys(static::SUPPORTED_ASSOCIATION_TYPES));
-            throw new SoftDeleteAssociationTypeNotSupportedException(\sprintf('AssociationType unsupported in %s->%s. got: %s, expected one of: %s.', $reflClass->getName(), $reflProperty->getName(), $associationHumanReadable, $associationMapHumanReadable));
+            $associationHumanReadable = static::ASSOCIATION_TO_STRING_MAP[$type] ?? sprintf('Unknown type: %d', $type);
+            $associationMapHumanReadable = implode(', ', array_keys(static::SUPPORTED_ASSOCIATION_TYPES));
+            throw new SoftDeleteAssociationTypeNotSupportedException(sprintf('AssociationType unsupported in %s->%s. got: %s, expected one of: %s.', $reflClass->getName(), $reflProperty->getName(), $associationHumanReadable, $associationMapHumanReadable));
         }
     }
 
     private function throwIfAssociatedObjectIsNotFound(array $associationMapping, \ReflectionClass $reflClass, \ReflectionProperty $reflProperty): void
     {
         $targetEntity = $associationMapping['targetEntity'] ?? '';
-        if (!\class_exists($targetEntity)) {
-            throw new SoftDeleteAssociationTargetNotFoundException(\sprintf('Set associated targetEntity %s could not be found. In %s->%s.', $targetEntity, $reflClass->getName(), $reflProperty->getName()));
+        if (!class_exists($targetEntity)) {
+            throw new SoftDeleteAssociationTargetNotFoundException(sprintf('Set associated targetEntity %s could not be found. In %s->%s.', $targetEntity, $reflClass->getName(), $reflProperty->getName()));
         }
     }
 
@@ -93,7 +93,7 @@ class OnSoftDeleteValidatorEventSubscriber implements EventSubscriber
         $arguments = $onSoftDeleteAttribute->getArguments();
         $type = $arguments[0] ?? $arguments['type'] ?? null;
         if (!$type instanceof Type) {
-            throw new SoftDeleteUnknownTypeException(\sprintf('Invalid type given to onSoftDelete attribute, expected one of %s. In %s->%s.', Type::class, $reflClass->getName(), $reflProperty->getName()));
+            throw new SoftDeleteUnknownTypeException(sprintf('Invalid type given to onSoftDelete attribute, expected one of %s. In %s->%s.', Type::class, $reflClass->getName(), $reflProperty->getName()));
         }
     }
 
@@ -108,12 +108,12 @@ class OnSoftDeleteValidatorEventSubscriber implements EventSubscriber
         $targetEntityReflClass = new \ReflectionClass($targetEntity);
         $targetEntityGedmoAttrs = $targetEntityReflClass->getAttributes(SoftDeleteable::class);
         if (empty($targetEntityGedmoAttrs)) {
-            throw new SoftDeleteClassHasNoGedmoAttributeException(\sprintf('Class %s has no Gedmo\SoftDeleteable attribute. Required for onSoftDelete(Type::CASCADE) in %s->%s.', $targetEntityReflClass->getName(), $reflClass->getName(), $reflProperty->getName()));
+            throw new SoftDeleteClassHasNoGedmoAttributeException(sprintf('Class %s has no Gedmo\SoftDeleteable attribute. Required for onSoftDelete(Type::CASCADE) in %s->%s.', $targetEntityReflClass->getName(), $reflClass->getName(), $reflProperty->getName()));
         }
 
         $fieldName = $targetEntityGedmoAttrs[0]->getArguments()['fieldName'] ?? null;
         if (empty($fieldName)) {
-            throw new SoftDeleteClassHasInvalidGedmoAttributeException(\sprintf('Class %s has Gedmo\SoftDeleteable attribute but no fieldName. Required for onSoftDelete(Type::CASCADE) in %s->%s.', $targetEntityReflClass->getName(), $reflClass->getName(), $reflProperty->getName()));
+            throw new SoftDeleteClassHasInvalidGedmoAttributeException(sprintf('Class %s has Gedmo\SoftDeleteable attribute but no fieldName. Required for onSoftDelete(Type::CASCADE) in %s->%s.', $targetEntityReflClass->getName(), $reflClass->getName(), $reflProperty->getName()));
         }
     }
 
@@ -129,7 +129,7 @@ class OnSoftDeleteValidatorEventSubscriber implements EventSubscriber
             return;
         }
 
-        throw new SoftDeleteAssociationTypeNotSupportedException(\sprintf('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association in %s->%s. Given %s.', $reflClass->getName(), $reflProperty->getName(), $type->value));
+        throw new SoftDeleteAssociationTypeNotSupportedException(sprintf('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association in %s->%s. Given %s.', $reflClass->getName(), $reflProperty->getName(), $type->value));
     }
 
     private function throwIfSoftDeleteTypeIsRemoveAssociationOnlyButAssociationTypeIsNotManyToMany(array $associationMapping, \ReflectionAttribute $onSoftDeleteAttribute, \ReflectionClass $reflClass, \ReflectionProperty $reflProperty): void
@@ -137,7 +137,7 @@ class OnSoftDeleteValidatorEventSubscriber implements EventSubscriber
         $arguments = $onSoftDeleteAttribute->getArguments();
         $type = $arguments[0] ?? $arguments['type'];
         if (ClassMetadataInfo::MANY_TO_MANY !== $associationMapping['type'] && Type::REMOVE_ASSOCIATION_ONLY === $type) {
-            throw new SoftDeleteAssociationTypeNotSupportedException(\sprintf('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations in %s->%s. Given %s.', $reflClass->getName(), $reflProperty->getName(), $type->value));
+            throw new SoftDeleteAssociationTypeNotSupportedException(sprintf('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations in %s->%s. Given %s.', $reflClass->getName(), $reflProperty->getName(), $type->value));
         }
     }
 
@@ -149,6 +149,6 @@ class OnSoftDeleteValidatorEventSubscriber implements EventSubscriber
         if (true === $associationMapping['isOwningSide']) {
             return;
         }
-        throw new SoftDeleteManyToManyNotOnMappedSideException(\sprintf('StichtingSD\onSoftDelete() should be defined on the mapped/owning side of the ManyToMany relation. In: %s->%s.', $reflClass->getName(), $reflProperty->getName()));
+        throw new SoftDeleteManyToManyNotOnMappedSideException(sprintf('StichtingSD\onSoftDelete() should be defined on the mapped/owning side of the ManyToMany relation. In: %s->%s.', $reflClass->getName(), $reflProperty->getName()));
     }
 }

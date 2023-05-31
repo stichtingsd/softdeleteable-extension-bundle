@@ -12,7 +12,8 @@ $container
     )
     ->addMethodCall('setContainer', [
         new Reference('service_container'),
-    ])->addTag('doctrine.event_subscriber');
+    ])->addTag('doctrine.event_subscriber')
+;
 
 /* @var \Symfony\Component\DependencyInjection\ContainerBuilder $container */
 $container
