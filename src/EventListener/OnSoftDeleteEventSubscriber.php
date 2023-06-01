@@ -11,14 +11,12 @@ declare(strict_types=1);
 
 namespace StichtingSD\SoftDeleteableExtensionBundle\EventListener;
 
-use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\UnitOfWork;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Persistence\ObjectManager;
 use Doctrine\Persistence\ObjectRepository;
 use Gedmo\Mapping\Annotation\SoftDeleteable;
-use Gedmo\SoftDeleteable\SoftDeleteableListener;
 use Gedmo\SoftDeleteable\SoftDeleteableListener as GedmoSoftDeleteableListener;
 use StichtingSD\SoftDeleteableExtensionBundle\Exception\SoftDeletePropertyAccessorNotFoundException;
 use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Attribute\onSoftDelete;
@@ -26,16 +24,9 @@ use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Type;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
-class OnSoftDeleteEventSubscriber implements EventSubscriber
+class OnSoftDeleteEventSubscriber
 {
     use ContainerAwareTrait;
-
-    public function getSubscribedEvents(): array
-    {
-        return [
-            SoftDeleteableListener::PRE_SOFT_DELETE,
-        ];
-    }
 
     public function preSoftDelete(LifecycleEventArgs $args)
     {

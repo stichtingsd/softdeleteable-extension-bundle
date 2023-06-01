@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Doctrine\ORM\Events;
+use Gedmo\SoftDeleteable\SoftDeleteableListener;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
@@ -12,7 +14,7 @@ $container
     )
     ->addMethodCall('setContainer', [
         new Reference('service_container'),
-    ])->addTag('doctrine.event_subscriber')
+    ])->addTag('doctrine.event_listener', ['event' => SoftDeleteableListener::PRE_SOFT_DELETE])
 ;
 
 /* @var \Symfony\Component\DependencyInjection\ContainerBuilder $container */
@@ -22,4 +24,5 @@ $container
     )
     ->addMethodCall('setContainer', [
         new Reference('service_container'),
-    ])->addTag('doctrine.event_subscriber');
+    ])->addTag('doctrine.event_listener', ['event' => Events::loadClassMetadata])
+;

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace StichtingSD\SoftDeleteableExtensionBundle\EventListener;
 
-use Doctrine\Common\EventSubscriber;
-use Doctrine\ORM\Events;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\Persistence\Event\LoadClassMetadataEventArgs;
 use Doctrine\Persistence\ObjectManager;
@@ -20,7 +18,7 @@ use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Attribute\onSoftDelete;
 use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Type;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
-class OnSoftDeleteValidatorEventSubscriber implements EventSubscriber
+class OnSoftDeleteValidatorEventSubscriber
 {
     use ContainerAwareTrait;
 
@@ -39,13 +37,6 @@ class OnSoftDeleteValidatorEventSubscriber implements EventSubscriber
     ];
 
     private ObjectManager $objectManager;
-
-    public function getSubscribedEvents(): array
-    {
-        return [
-            Events::loadClassMetadata,
-        ];
-    }
 
     public function loadClassMetaData(LoadClassMetadataEventArgs $args): void
     {

@@ -9,6 +9,7 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Logging\Middleware;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Events;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ObjectManager;
@@ -46,8 +47,8 @@ abstract class BaseTestCase extends TestCase
         ];
 
         $evm = new EventManager();
-        $evm->addEventSubscriber(new OnSoftDeleteValidatorEventSubscriber());
-        $evm->addEventSubscriber(new OnSoftDeleteEventSubscriber());
+        $evm->addEventListener(SoftDeleteableListener::PRE_SOFT_DELETE, new OnSoftDeleteEventSubscriber());
+        $evm->addEventListener(Events::loadClassMetadata, new OnSoftDeleteValidatorEventSubscriber());
 
         // Enable Gedmo event listener and filter.
         $config = $this->getDefaultConfiguration(md5(json_encode($entityPaths)));
