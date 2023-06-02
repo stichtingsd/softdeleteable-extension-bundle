@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace StichtingSD\SoftDeleteableExtensionBundle\EventListener;
 
+use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\UnitOfWork;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
@@ -187,6 +188,11 @@ class OnSoftDeleteEventSubscriber
         // Field name is set in the targetEntity class, when Entity1 as #[onSoftDelete()] on a property.
         // We should grab the SoftDelete fieldName from Gedmo.
         $gedmoAttributes = $reflClass->getAttributes(SoftDeleteable::class);
+
+        if (empty($gedmoAttributes[0])) {
+            throw new \RuntimeException(sprintf('onSoftDelete attribute was used in %s->%s but %s has no Gedmo attribute for soft delete.', $reflClass->getName(), $reflProperty->getName(), $reflClass->getName()));
+        }
+
         $gedmoArguments = $gedmoAttributes[0]->getArguments();
         $fieldName = $gedmoArguments['fieldName'];
 
@@ -209,7 +215,7 @@ class OnSoftDeleteEventSubscriber
             ->andWhere("e.{$reflProperty->getName()} = :eventObject")
             ->setParameter('eventObject', $eventObject)
             ->getQuery()
-            ->iterate()
+            ->toIterable(hydrationMode: AbstractQuery::HYDRATE_ARRAY)
         ;
 
         /**
@@ -218,7 +224,12 @@ class OnSoftDeleteEventSubscriber
         $uow = $objectManager->getUnitOfWork();
         // Use the getReference() method to fetch a partial object for each entity
         foreach ($objectsAssociatedToEventObject as $row) {
-            $id = $row[0];
+            $id = $row['id'] ?? null;
+
+            if (null === $id) {
+                continue;
+            }
+
             $objectProxy = $objectManager->getReference($reflClass->getName(), $id);
             $objectManager->getEventManager()->dispatchEvent(
                 GedmoSoftDeleteableListener::PRE_SOFT_DELETE,
