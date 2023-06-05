@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace StichtingSD\SoftDeleteableExtensionBundle\EventListener;
 
+use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\UnitOfWork;
@@ -36,12 +37,13 @@ class OnSoftDeleteEventSubscriber
     {
         $objectManager = $args->getObjectManager();
         $eventObject = $args->getObject();
+        $realClassName = ClassUtils::getRealClass($eventObject::class);
 
-        if (!$this->metadataFactory->hasCachedMetadataForClass($eventObject::class)) {
+        if (!$this->metadataFactory->hasCachedMetadataForClass($realClassName)) {
             $this->metadataFactory->computeMetadata($objectManager);
         }
 
-        $metaData = $this->metadataFactory->getCachedMetadataForClass($eventObject::class);
+        $metaData = $this->metadataFactory->getCachedMetadataForClass($realClassName);
         if (empty($metaData)) {
             return;
         }

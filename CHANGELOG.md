@@ -1,5 +1,8 @@
 # Changelog
 
+### [1.0.4]
+- (fix) cache not working because of doctrine proxy object.
+
 ### [1.0.3]
 - (fix) dont create alias of abstract service cache.adapter.array
 

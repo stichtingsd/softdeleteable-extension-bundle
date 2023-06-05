@@ -22,7 +22,7 @@ class StichtingSDSoftDeleteableExtensionBundle extends AbstractBundle
 
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
-        if ($config['metadata_cache'] !== 'cache.adapter.array') {
+        if ('cache.adapter.array' !== $config['metadata_cache']) {
             $builder->setAlias('stichtingsd.softdeleteable_extension.cache', $config['metadata_cache']);
         } else {
             $container->services()->set('stichtingsd.softdeleteable_extension.cache')->parent('cache.adapter.array');
