@@ -16,11 +16,9 @@ use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\UnitOfWork;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Persistence\ObjectManager;
-use Doctrine\Persistence\ObjectRepository;
-use Gedmo\Mapping\Annotation\SoftDeleteable;
 use Gedmo\SoftDeleteable\SoftDeleteableListener as GedmoSoftDeleteableListener;
 use StichtingSD\SoftDeleteableExtensionBundle\Exception\SoftDeletePropertyAccessorNotFoundException;
-use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Attribute\onSoftDelete;
+use StichtingSD\SoftDeleteableExtensionBundle\Mapping\MetadataFactory;
 use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Type;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -29,74 +27,64 @@ class OnSoftDeleteEventSubscriber
 {
     use ContainerAwareTrait;
 
-    public function preSoftDelete(LifecycleEventArgs $args)
+    public function __construct(
+        private MetadataFactory $metadataFactory
+    ) {
+    }
+
+    public function preSoftDelete(LifecycleEventArgs $args): void
     {
         $objectManager = $args->getObjectManager();
         $eventObject = $args->getObject();
 
-        $allClassNames = $objectManager->getConfiguration()
-            ->getMetadataDriverImpl()
-            ->getAllClassNames()
-        ;
-        foreach ($allClassNames as $className) {
-            $reflClass = new \ReflectionClass($className);
-            if ($reflClass->isAbstract()) {
-                return false;
+        if (!$this->metadataFactory->hasCachedMetadataForClass($eventObject::class)) {
+            $this->metadataFactory->computeMetadata($objectManager);
+        }
+
+        $metaData = $this->metadataFactory->getCachedMetadataForClass($eventObject::class);
+        if (empty($metaData)) {
+            return;
+        }
+
+        foreach ($metaData as $cachedProperty) {
+            $type = Type::from($cachedProperty['type']);
+            $associationMappingType = $cachedProperty['associationMappingType'];
+
+            // ManyToMany is always CASCADE with one but. We only want to remove the association itself instead of the other entity.
+            // This is because the other entity can still be associated to other objects and by removing the associated object could cause unintended removals.
+            if (ClassMetadataInfo::MANY_TO_MANY === $associationMappingType && Type::REMOVE_ASSOCIATION_ONLY === $type) {
+                $this->removeAssociationsFromManyToMany(
+                    $eventObject,
+                    $cachedProperty,
+                    $objectManager
+                );
+
+                // We must continue because we don't want to soft-delete the target many-to-many object, only its association.
+                continue;
             }
 
-            $meta = $objectManager->getClassMetadata($className);
-            $objectRepository = $objectManager->getRepository($className);
-            foreach ($reflClass->getProperties() as $reflProperty) {
-                // If the property is not an association, skip it.
-                if (!\array_key_exists($reflProperty->getName(), $meta->getAssociationMappings())) {
-                    continue;
-                }
-
-                // If no onSoftDelete attribute is defined, skip it.
-                $softDeleteAttributes = $reflProperty->getAttributes(onSoftDelete::class);
-                if (empty($softDeleteAttributes)) {
-                    continue;
-                }
-
-                $arguments = $softDeleteAttributes[0]->getArguments();
-                $type = $arguments[0] ?? $arguments['type'] ?? null;
-
-                $associationMapping = $meta->getAssociationMapping($reflProperty->getName());
-                // ManyToMany is always CASCADE with one but. We only want to remove the association itself instead of the other entity.
-                // This is because the other entity can still be associated to other objects and by removing the associated object could cause unintended removals.
-                if (ClassMetadataInfo::MANY_TO_MANY === $associationMapping['type'] && Type::REMOVE_ASSOCIATION_ONLY === $type) {
-                    $this->removeAssociationsFromManyToMany($eventObject, $associationMapping, $reflClass, $reflProperty, $objectRepository, $objectManager);
-
-                    // We must continue because we don't want to soft-delete the target many-to-many object, only its association.
-                    continue;
-                }
-
-                // If it's not a ManyToMany (because it can have the attribute on the mapped and inversed side)
-                // and the targetEntity is not an instance of object that was being soft deleted skip it.
-                // For example, eventObject is a ParentEntity and being deleted
-                // When we loop all the entities to look for associations to this entity.
-                // If the current entity in the loop has an association, its targetEntityClassName is the ParentEntity.
-                // So we must cascade softDelete the $className (sourceEntity) because its has a onSoftDelete() defined.
-                if (!$eventObject instanceof (new $associationMapping['targetEntity']())) {
-                    continue;
-                }
-
-                match ($type) {
-                    Type::SET_NULL => $this->setNullAssociatedObjects($eventObject, $reflClass, $reflProperty, $objectRepository, $objectManager),
-                    Type::CASCADE => $this->cascadeAssociatedObjects($eventObject, $reflClass, $reflProperty, $objectRepository, $objectManager)
-                };
-            }
+            match ($type) {
+                Type::SET_NULL => $this->setNullAssociatedObjects(
+                    $eventObject,
+                    $cachedProperty,
+                    $objectManager
+                ),
+                Type::CASCADE => $this->cascadeAssociatedObjects(
+                    $eventObject,
+                    $cachedProperty,
+                    $objectManager
+                )
+            };
         }
     }
 
-    private function removeAssociationsFromManyToMany(object $eventObject, array $associationMapping, \ReflectionClass $reflClass, \ReflectionProperty $reflProperty, ObjectRepository $objectRepository, ObjectManager $objectManager): void
+    private function removeAssociationsFromManyToMany(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
+        $propertyAccessor = PropertyAccess::createPropertyAccessor();
+
         // Unidirectional defined the ManyToMany on one side only, so there is no inversedBy or mappedBy
         // Because unidirectional is always defined on the owning side.
-        $isUnidirectional = empty($associationMapping['mappedBy']) && empty($associationMapping['inversedBy']);
-        $inversedAssociationRemoved = $reflClass->getName() !== $eventObject::class;
-
-        if ($isUnidirectional || $inversedAssociationRemoved) {
+        if ($metaData['isUnidirectional']) {
             // IMPORTANT! TODO! BUG!
             // Currently a bug and I don't understand why the code bellow doesn't work.
             // For some reason, the query executed bellow does return an entity but the associated entity
@@ -105,10 +93,12 @@ class OnSoftDeleteEventSubscriber
             // Well, I've tried using the POST_SOFT_DELETE event but that does not matter.
             // See SoftDeleteManyToManyTest (skipped one's).
             // Call $objectManager->clear(); and add a count and you see it works.
-            $associatedObjects = $objectRepository->createQueryBuilder('e')
-                ->innerJoin(sprintf('e.%s', $reflProperty->getName()), 'association')
+            $associatedObjects = $objectManager->createQueryBuilder()
+                ->select('e')
+                ->from($metaData['associatedTo'], 'e')
+                ->innerJoin(sprintf('e.%s', $metaData['associatedToProperty']), 'association')
                 ->addSelect('association')
-                ->andWhere(sprintf(':entity MEMBER OF e.%s', $reflProperty->getName()))
+                ->andWhere(sprintf(':entity MEMBER OF e.%s', $metaData['associatedToProperty']))
                 ->setParameter('entity', $eventObject)
                 ->getQuery()
                 ->getResult()
@@ -132,7 +122,7 @@ class OnSoftDeleteEventSubscriber
                 $meta = $objectManager->getClassMetadata($object::class);
                 $uow->computeChangeSet($meta, $object);
 
-                $association = $reflProperty->getValue($object);
+                $association = $propertyAccessor->getValue($object, $metaData['associatedToProperty']);
                 $association->removeElement($eventObject);
             }
 
@@ -140,30 +130,33 @@ class OnSoftDeleteEventSubscriber
         }
 
         try {
-            $propertyAccessor = PropertyAccess::createPropertyAccessor();
-            $collection = $propertyAccessor->getValue($eventObject, $reflProperty->getName());
+            $collection = $propertyAccessor->getValue($eventObject, $metaData['targetEntityProperty']);
             $collection->clear();
         } catch (\Exception $e) {
-            throw new SoftDeletePropertyAccessorNotFoundException(sprintf('No accessor found for %s in %s', $reflProperty->name, $eventObject::class), previous: $e);
+            throw new SoftDeletePropertyAccessorNotFoundException(sprintf('No accessor found for %s in %s', $metaData['associatedToProperty'], $eventObject::class), previous: $e);
         }
     }
 
-    private function setNullAssociatedObjects(object $eventObject, \ReflectionClass $reflClass, \ReflectionProperty $reflProperty, ObjectRepository $objectRepository, ObjectManager $objectManager): void
+    private function setNullAssociatedObjects(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
+        $className = $metaData['associatedTo'];
+        $propertyName = $metaData['associatedToProperty'];
+
         // Grab all the id's that are going to be updated, so we can schedule them for update.
-        $objectsAssociatedToEventObject = $objectRepository->createQueryBuilder('e')
+        $objectsAssociatedToEventObject = $objectManager->createQueryBuilder()
             ->select('e.id')
-            ->andWhere("e.{$reflProperty->getName()} = :eventObject")
+            ->from($metaData['associatedTo'], 'e')
+            ->andWhere("e.{$propertyName} = :eventObject")
             ->setParameter('eventObject', $eventObject)
             ->getQuery()
             ->getSingleColumnResult()
         ;
 
         // Actually update the entities, doing it this way won't cause memory problems.
-        $objectRepository->createQueryBuilder('e')
-            ->update()
-            ->set("e.{$reflProperty->getName()}", ':relation')
-            ->andWhere("e.{$reflProperty->getName()} = :eventObject")
+        $objectManager->createQueryBuilder()
+            ->update($metaData['associatedTo'], 'e')
+            ->set("e.{$propertyName}", ':relation')
+            ->andWhere("e.{$propertyName} = :eventObject")
             ->setParameter('eventObject', $eventObject)
             ->setParameter('relation', null)
             ->getQuery()
@@ -176,32 +169,27 @@ class OnSoftDeleteEventSubscriber
         $uow = $objectManager->getUnitOfWork();
         // Use the getReference() method to fetch a partial object for each entity
         foreach ($objectsAssociatedToEventObject as $id) {
-            $objectProxy = $objectManager->getReference($reflClass->getName(), $id);
+            $objectProxy = $objectManager->getReference($className, $id);
             $uow->scheduleExtraUpdate($objectProxy, [
-                $reflProperty->getName() => [$eventObject, null],
+                $propertyName => [$eventObject, null],
             ]);
         }
     }
 
-    private function cascadeAssociatedObjects(object $eventObject, \ReflectionClass $reflClass, \ReflectionProperty $reflProperty, ObjectRepository $objectRepository, ObjectManager $objectManager): void
+    private function cascadeAssociatedObjects(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
         // Field name is set in the targetEntity class, when Entity1 as #[onSoftDelete()] on a property.
         // We should grab the SoftDelete fieldName from Gedmo.
-        $gedmoAttributes = $reflClass->getAttributes(SoftDeleteable::class);
-
-        if (empty($gedmoAttributes[0])) {
-            throw new \RuntimeException(sprintf('onSoftDelete attribute was used in %s->%s but %s has no Gedmo attribute for soft delete.', $reflClass->getName(), $reflProperty->getName(), $reflClass->getName()));
-        }
-
-        $gedmoArguments = $gedmoAttributes[0]->getArguments();
-        $fieldName = $gedmoArguments['fieldName'];
+        $className = $metaData['associatedTo'];
+        $propertyName = $metaData['associatedToProperty'];
+        $fieldName = $metaData['targetEntitySoftDeleteFieldName'];
 
         // Actually update the entities, doing it this way won't cause memory problems.
         $deletedAt = new \DateTimeImmutable();
-        $objectRepository->createQueryBuilder('e')
-            ->update(alias: 'e')
+        $objectManager->createQueryBuilder()
+            ->update($metaData['associatedTo'], 'e')
             ->set("e.{$fieldName}", ':deletedAt')
-            ->andWhere("e.{$reflProperty->getName()} = :eventObject")
+            ->andWhere("e.{$propertyName} = :eventObject")
             ->andWhere("e.{$fieldName} IS NULL")
             ->setParameter('eventObject', $eventObject)
             ->setParameter('deletedAt', $deletedAt->format('Y-m-d H:i:s'))
@@ -210,9 +198,10 @@ class OnSoftDeleteEventSubscriber
         ;
 
         // Grab all the id's that are going to be updated, so we can schedule them for update.
-        $objectsAssociatedToEventObject = $objectRepository->createQueryBuilder('e')
+        $objectsAssociatedToEventObject = $objectManager->createQueryBuilder()
             ->select('e.id')
-            ->andWhere("e.{$reflProperty->getName()} = :eventObject")
+            ->from($metaData['associatedTo'], 'e')
+            ->andWhere("e.{$propertyName} = :eventObject")
             ->setParameter('eventObject', $eventObject)
             ->getQuery()
             ->toIterable(hydrationMode: AbstractQuery::HYDRATE_ARRAY)
@@ -230,7 +219,7 @@ class OnSoftDeleteEventSubscriber
                 continue;
             }
 
-            $objectProxy = $objectManager->getReference($reflClass->getName(), $id);
+            $objectProxy = $objectManager->getReference($className, $id);
             $objectManager->getEventManager()->dispatchEvent(
                 GedmoSoftDeleteableListener::PRE_SOFT_DELETE,
                 new LifecycleEventArgs($objectProxy, $objectManager)

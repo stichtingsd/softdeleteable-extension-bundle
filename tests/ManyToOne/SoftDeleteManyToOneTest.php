@@ -286,7 +286,7 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
     public function testOnSoftDeleteAttributeOnOneToManyThrowsException(): void
     {
         static::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
-        static::expectExceptionMessage('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations in StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToOne\RemoveAssociationOnly\SimpleMapping\ChildEntity->parent. Given REMOVE_ASSOCIATION_ONLY.');
+        static::expectExceptionMessage('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations given REMOVE_ASSOCIATION_ONLY. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToOne\RemoveAssociationOnly\SimpleMapping\ChildEntity->parent.');
         $this->getObjectManager([
             RemoveAssociationOnly\SimpleMapping\ChildEntity::class,
             RemoveAssociationOnly\SimpleMapping\ParentEntity::class,

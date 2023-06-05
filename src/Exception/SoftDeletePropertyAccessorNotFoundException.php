@@ -11,10 +11,17 @@ declare(strict_types=1);
 
 namespace StichtingSD\SoftDeleteableExtensionBundle\Exception;
 
-class SoftDeletePropertyAccessorNotFoundException extends \Exception
+class SoftDeletePropertyAccessorNotFoundException extends \Exception implements SoftDeleteBundleExceptionInterface
 {
     public function __construct(string $message, \Throwable $previous = null)
     {
         parent::__construct($message, previous: $previous);
+    }
+
+    public function addMessage(string $message): self
+    {
+        $this->message .= $message;
+
+        return $this;
     }
 }

@@ -15,7 +15,7 @@ final class SoftDeleteOneToManyTest extends BaseTestCase
     public function testOneToManyAssociationIsUnsupportedForCascadeType(): void
     {
         static::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
-        static::expectExceptionMessage('AssociationType unsupported in StichtingSD\SoftDeleteableExtensionBundle\Tests\OneToMany\Cascade\SimpleMapping\ParentEntity->children. got: OneToMany, expected one of: OneToOne, ManyToOne, ManyToMany.');
+        static::expectExceptionMessage('AssociationType unsupported. got: OneToMany, expected one of: OneToOne, ManyToOne, ManyToMany. In StichtingSD\SoftDeleteableExtensionBundle\Tests\OneToMany\Cascade\SimpleMapping\ParentEntity->children.');
         $this->getObjectManager([
             Cascade\SimpleMapping\ChildEntity::class,
             Cascade\SimpleMapping\ParentEntity::class,
@@ -25,7 +25,7 @@ final class SoftDeleteOneToManyTest extends BaseTestCase
     public function testOneToManyAssociationIsUnsupportedForSetNullType(): void
     {
         static::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
-        static::expectExceptionMessage('AssociationType unsupported in StichtingSD\SoftDeleteableExtensionBundle\Tests\OneToMany\RemoveAssociationOnly\SimpleMapping\ParentEntity->children. got: OneToMany, expected one of: OneToOne, ManyToOne, ManyToMany.');
+        static::expectExceptionMessage('AssociationType unsupported. got: OneToMany, expected one of: OneToOne, ManyToOne, ManyToMany. In StichtingSD\SoftDeleteableExtensionBundle\Tests\OneToMany\RemoveAssociationOnly\SimpleMapping\ParentEntity->children.');
         $this->getObjectManager([
             RemoveAssociationOnly\SimpleMapping\ChildEntity::class,
             RemoveAssociationOnly\SimpleMapping\ParentEntity::class,
@@ -35,7 +35,7 @@ final class SoftDeleteOneToManyTest extends BaseTestCase
     public function testOneToManyAssociationIsUnsupportedForRemoveAssociationType(): void
     {
         static::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
-        static::expectExceptionMessage('AssociationType unsupported in StichtingSD\SoftDeleteableExtensionBundle\Tests\OneToMany\SetNull\SimpleMapping\ParentEntity->children. got: OneToMany, expected one of: OneToOne, ManyToOne, ManyToMany.');
+        static::expectExceptionMessage('AssociationType unsupported. got: OneToMany, expected one of: OneToOne, ManyToOne, ManyToMany. In StichtingSD\SoftDeleteableExtensionBundle\Tests\OneToMany\SetNull\SimpleMapping\ParentEntity->children.');
         $this->getObjectManager([
             SetNull\SimpleMapping\ChildEntity::class,
             SetNull\SimpleMapping\ParentEntity::class,

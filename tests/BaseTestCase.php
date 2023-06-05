@@ -20,6 +20,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use StichtingSD\SoftDeleteableExtensionBundle\EventListener\OnSoftDeleteEventSubscriber;
 use StichtingSD\SoftDeleteableExtensionBundle\EventListener\OnSoftDeleteValidatorEventSubscriber;
+use StichtingSD\SoftDeleteableExtensionBundle\Mapping\MetadataFactory;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 abstract class BaseTestCase extends TestCase
 {
@@ -46,9 +48,11 @@ abstract class BaseTestCase extends TestCase
             'memory' => true,
         ];
 
+        $arrayAdapter = new ArrayAdapter();
+        $metaDataFactory = new MetadataFactory($arrayAdapter);
         $evm = new EventManager();
-        $evm->addEventListener(SoftDeleteableListener::PRE_SOFT_DELETE, new OnSoftDeleteEventSubscriber());
-        $evm->addEventListener(Events::loadClassMetadata, new OnSoftDeleteValidatorEventSubscriber());
+        $evm->addEventListener(Events::loadClassMetadata, new OnSoftDeleteValidatorEventSubscriber($metaDataFactory));
+        $evm->addEventListener(SoftDeleteableListener::PRE_SOFT_DELETE, new OnSoftDeleteEventSubscriber($metaDataFactory));
 
         // Enable Gedmo event listener and filter.
         $config = $this->getDefaultConfiguration(md5(json_encode($entityPaths)));

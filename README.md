@@ -11,7 +11,7 @@ Entities that have 10.000+ relations are updated in a split second.
 
 ## Prerequisites
 
-**This bundle requires Symfony ^6.0 or higher and PHP ^8.1 or higher**
+**This bundle requires Symfony ^6.1 or higher and PHP ^8.1 or higher**
 - Symfony ^6.0
 - PHP ^8.1
 - doctrine/doctrine-extensions ^2.0 | ^3.0 (Gedmo)
