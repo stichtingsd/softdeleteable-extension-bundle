@@ -4,40 +4,38 @@ declare(strict_types=1);
 
 use Doctrine\ORM\Events;
 use Gedmo\SoftDeleteable\SoftDeleteableListener;
-use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
-/* @var \Symfony\Component\DependencyInjection\ContainerBuilder $container */
-$container
-    ->setDefinition(
-        'stichtingsd.soft_deletable_extension.metadata_factory',
-        new Definition('StichtingSD\SoftDeleteableExtensionBundle\Mapping\MetadataFactory')
-    )
-    ->addArgument(new Reference('stichtingsd.softdeleteable_extension.cache'))
-;
+return static function (ContainerConfigurator $container) {
+    $container
+        ->services()
+        ->set(
+            'stichtingsd.soft_deletable_extension.metadata_factory',
+            StichtingSD\SoftDeleteableExtensionBundle\Mapping\MetadataFactory::class
+        )
+        ->arg(0, service('stichtingsd.softdeleteable_extension.cache'))
+    ;
 
-/* @var \Symfony\Component\DependencyInjection\ContainerBuilder $container */
-$container
-    ->setDefinition(
-        'stichtingsd.soft_deletable_extension.subscriber',
-        new Definition('StichtingSD\SoftDeleteableExtensionBundle\EventListener\OnSoftDeleteEventSubscriber')
-    )
-    ->addMethodCall('setContainer', [
-        new Reference('service_container'),
-    ])
-    ->addArgument(new Reference('stichtingsd.soft_deletable_extension.metadata_factory'))
-    ->addTag('doctrine.event_listener', ['event' => SoftDeleteableListener::PRE_SOFT_DELETE])
-;
+    $container
+        ->services()
+        ->set(
+            'stichtingsd.soft_deletable_extension.subscriber',
+            StichtingSD\SoftDeleteableExtensionBundle\EventListener\OnSoftDeleteEventSubscriber::class,
+        )
+        ->call('setContainer', [service('service_container')])
+        ->arg(0, service('stichtingsd.soft_deletable_extension.metadata_factory'))
+        ->tag('doctrine.event_listener', ['event' => SoftDeleteableListener::PRE_SOFT_DELETE])
+    ;
 
-/* @var \Symfony\Component\DependencyInjection\ContainerBuilder $container */
-$container
-    ->setDefinition(
-        'stichtingsd.soft_deletable_extension.validator',
-        new Definition('StichtingSD\SoftDeleteableExtensionBundle\EventListener\OnSoftDeleteValidatorEventSubscriber')
-    )
-    ->addMethodCall('setContainer', [
-        new Reference('service_container'),
-    ])
-    ->addArgument(new Reference('stichtingsd.soft_deletable_extension.metadata_factory'))
-    ->addTag('doctrine.event_listener', ['event' => Events::loadClassMetadata])
-;
+    $container
+        ->services()
+        ->set(
+            'stichtingsd.soft_deletable_extension.validator',
+            StichtingSD\SoftDeleteableExtensionBundle\EventListener\OnSoftDeleteValidatorEventSubscriber::class,
+        )
+        ->call('setContainer', [service('service_container')])
+        ->arg(0, service('stichtingsd.soft_deletable_extension.metadata_factory'))
+        ->tag('doctrine.event_listener', ['event' => Events::loadClassMetadata])
+    ;
+};

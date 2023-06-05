@@ -1,5 +1,8 @@
 # Changelog
 
+### [1.0.3]
+- (fix) dont create alias of abstract service cache.adapter.array
+
 ### [1.0.2]
 - (improvement) Add metadata caching for more efficient deleting.
 - (upgrade) Use the new symfony ^6.1 bundle system.
