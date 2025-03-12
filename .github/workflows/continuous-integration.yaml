@@ -1,0 +1,43 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: ['master']
+  push:
+
+jobs:
+  phpunit:
+    name: PHPUnit (PHP ${{ matrix.php-version }} - Symfony ${{ matrix.symfony-version }})
+    runs-on: ubuntu-24.04
+    env:
+      SYMFONY_REQUIRE: ${{ matrix.symfony-version }}
+
+    strategy:
+      matrix:
+        php-version:
+          - '8.3'
+          - '8.4'
+        symfony-version:
+          - '6.4.*'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+
+      - name: Install Symfony Flex
+        run: |
+          composer config --global --no-plugins allow-plugins.symfony/flex true
+          composer global require --no-progress --no-scripts --no-plugins symfony/flex
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Run PHPUnit
+        run: bin/phpunit
