@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace StichtingSD\SoftDeleteableExtensionBundle\Mapping\Attribute;
 
-use Attribute;
 use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Type;
 
 #[\Attribute]

@@ -34,8 +34,8 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $parentRepository = $objectManager->getRepository(Cascade\SimpleMapping\ParentEntity::class);
         $parent = $parentRepository->find($parent1->getId());
-        static::assertInstanceOf(Cascade\SimpleMapping\ParentEntity::class, $parent);
-        static::assertCount(2, $parent->getChildren());
+        self::assertInstanceOf(Cascade\SimpleMapping\ParentEntity::class, $parent);
+        self::assertCount(2, $parent->getChildren());
 
         $objectManager->remove($parent);
         $objectManager->flush();
@@ -43,9 +43,9 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $objectManager->getFilters()->disable('softdeleteable');
         $parent = $parentRepository->find($parent->getId());
-        static::assertNotNull($parent->getDeletedAt());
+        self::assertNotNull($parent->getDeletedAt());
         foreach ($parent->getChildren() as $child) {
-            static::assertNotNull($child->getDeletedAt());
+            self::assertNotNull($child->getDeletedAt());
         }
     }
 
@@ -72,8 +72,8 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $parentRepository = $objectManager->getRepository(Cascade\SimpleMapping\ParentEntity::class);
         $parent = $parentRepository->find($parent1->getId());
-        static::assertInstanceOf(Cascade\SimpleMapping\ParentEntity::class, $parent);
-        static::assertCount(2, $parent->getChildren());
+        self::assertInstanceOf(Cascade\SimpleMapping\ParentEntity::class, $parent);
+        self::assertCount(2, $parent->getChildren());
 
         $objectManager->remove($parent);
         $objectManager->flush();
@@ -81,10 +81,10 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $objectManager->getFilters()->disable('softdeleteable');
         $parent = $parentRepository->find($parent->getId());
-        static::assertNull($notRelated->getDeletedAt());
-        static::assertNotNull($parent->getDeletedAt());
+        self::assertNull($notRelated->getDeletedAt());
+        self::assertNotNull($parent->getDeletedAt());
         foreach ($parent->getChildren() as $child) {
-            static::assertNotNull($child->getDeletedAt());
+            self::assertNotNull($child->getDeletedAt());
         }
     }
 
@@ -124,13 +124,13 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $parentRepository = $objectManager->getRepository(Cascade\MultiLevelChildrenSoftDelete\ParentEntity::class);
         $parent = $parentRepository->find($parent1->getId());
-        static::assertInstanceOf(Cascade\MultiLevelChildrenSoftDelete\ParentEntity::class, $parent);
-        static::assertCount(2, $parent->getChildren());
+        self::assertInstanceOf(Cascade\MultiLevelChildrenSoftDelete\ParentEntity::class, $parent);
+        self::assertCount(2, $parent->getChildren());
         foreach ($parent->getChildren() as $child) {
-            static::assertCount(1000, $child->getChildMetas());
-            static::assertNull($child->getDeletedAt());
+            self::assertCount(1000, $child->getChildMetas());
+            self::assertNull($child->getDeletedAt());
             foreach ($child->getChildMetas() as $meta) {
-                static::assertNull($meta->getDeletedAt());
+                self::assertNull($meta->getDeletedAt());
             }
         }
 
@@ -140,12 +140,12 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $objectManager->getFilters()->disable('softdeleteable');
         $parent = $parentRepository->find($parent->getId());
-        static::assertNull($notRelated->getDeletedAt());
-        static::assertNotNull($parent->getDeletedAt());
+        self::assertNull($notRelated->getDeletedAt());
+        self::assertNotNull($parent->getDeletedAt());
         foreach ($parent->getChildren() as $child) {
-            static::assertNotNull($child->getDeletedAt());
+            self::assertNotNull($child->getDeletedAt());
             foreach ($child->getChildMetas() as $meta) {
-                static::assertNotNull($meta->getDeletedAt());
+                self::assertNotNull($meta->getDeletedAt());
             }
         }
     }
@@ -171,8 +171,8 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $parentRepository = $objectManager->getRepository(SetNull\SimpleMapping\ParentEntity::class);
         $parent = $parentRepository->find($parent1->getId());
-        static::assertInstanceOf(SetNull\SimpleMapping\ParentEntity::class, $parent);
-        static::assertCount(2, $parent->getChildren());
+        self::assertInstanceOf(SetNull\SimpleMapping\ParentEntity::class, $parent);
+        self::assertCount(2, $parent->getChildren());
 
         $objectManager->remove($parent);
         $objectManager->flush();
@@ -180,8 +180,8 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $objectManager->getFilters()->disable('softdeleteable');
         $parent = $parentRepository->find($parent->getId());
-        static::assertNotNull($parent->getDeletedAt());
-        static::assertCount(0, $parent->getChildren());
+        self::assertNotNull($parent->getDeletedAt());
+        self::assertCount(0, $parent->getChildren());
     }
 
     public function testOnlyAssociatedChildrenAreNulledAndOthersAreNotNulled(): void
@@ -207,8 +207,8 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $parentRepository = $objectManager->getRepository(SetNull\SimpleMapping\ParentEntity::class);
         $parent = $parentRepository->find($parent1->getId());
-        static::assertInstanceOf(SetNull\SimpleMapping\ParentEntity::class, $parent);
-        static::assertCount(2, $parent->getChildren());
+        self::assertInstanceOf(SetNull\SimpleMapping\ParentEntity::class, $parent);
+        self::assertCount(2, $parent->getChildren());
 
         $objectManager->remove($parent);
         $objectManager->flush();
@@ -216,9 +216,9 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $objectManager->getFilters()->disable('softdeleteable');
         $parent = $parentRepository->find($parent->getId());
-        static::assertNull($notRelated->getDeletedAt());
-        static::assertNotNull($parent->getDeletedAt());
-        static::assertCount(0, $parent->getChildren());
+        self::assertNull($notRelated->getDeletedAt());
+        self::assertNotNull($parent->getDeletedAt());
+        self::assertCount(0, $parent->getChildren());
     }
 
     public function testWhenParentEntityHasOnSoftDeleteSetNullAndAChildHasARelationThatAlsoHasOnSoftDeleteTheyAreAlsoDeletedRercursively(): void
@@ -257,13 +257,13 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $parentRepository = $objectManager->getRepository(SetNull\MultiLevelChildrenSoftDelete\ParentEntity::class);
         $parent = $parentRepository->find($parent1->getId());
-        static::assertInstanceOf(SetNull\MultiLevelChildrenSoftDelete\ParentEntity::class, $parent);
-        static::assertCount(2, $parent->getChildren());
+        self::assertInstanceOf(SetNull\MultiLevelChildrenSoftDelete\ParentEntity::class, $parent);
+        self::assertCount(2, $parent->getChildren());
         foreach ($parent->getChildren() as $child) {
-            static::assertCount(1000, $child->getChildMetas());
-            static::assertNull($child->getDeletedAt());
+            self::assertCount(1000, $child->getChildMetas());
+            self::assertNull($child->getDeletedAt());
             foreach ($child->getChildMetas() as $meta) {
-                static::assertNull($meta->getDeletedAt());
+                self::assertNull($meta->getDeletedAt());
             }
         }
 
@@ -273,20 +273,20 @@ final class SoftDeleteManyToOneTest extends BaseTestCase
 
         $objectManager->getFilters()->disable('softdeleteable');
         $parent = $parentRepository->find($parent->getId());
-        static::assertNull($notRelated->getDeletedAt());
-        static::assertNotNull($parent->getDeletedAt());
+        self::assertNull($notRelated->getDeletedAt());
+        self::assertNotNull($parent->getDeletedAt());
         foreach ($parent->getChildren() as $child) {
-            static::assertNotNull($child->getDeletedAt());
+            self::assertNotNull($child->getDeletedAt());
             foreach ($child->getChildMetas() as $meta) {
-                static::assertNotNull($meta->getDeletedAt());
+                self::assertNotNull($meta->getDeletedAt());
             }
         }
     }
 
     public function testOnSoftDeleteAttributeOnOneToManyThrowsException(): void
     {
-        static::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
-        static::expectExceptionMessage('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations given REMOVE_ASSOCIATION_ONLY. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToOne\RemoveAssociationOnly\SimpleMapping\ChildEntity->parent.');
+        self::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
+        self::expectExceptionMessage('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations given REMOVE_ASSOCIATION_ONLY. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToOne\RemoveAssociationOnly\SimpleMapping\ChildEntity->parent.');
         $this->getObjectManager([
             RemoveAssociationOnly\SimpleMapping\ChildEntity::class,
             RemoveAssociationOnly\SimpleMapping\ParentEntity::class,

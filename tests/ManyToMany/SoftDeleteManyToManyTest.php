@@ -15,8 +15,8 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
 {
     public function testManyToManyWithCascadeThrowsExceptionUnsupportedType(): void
     {
-        static::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
-        static::expectExceptionMessage('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association given CASCADE. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToMany\Cascade\MappedSide\InversedEntity->parents.');
+        self::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
+        self::expectExceptionMessage('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association given CASCADE. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToMany\Cascade\MappedSide\InversedEntity->parents.');
         $this->getObjectManager([
             Cascade\MappedSide\InversedEntity::class,
             Cascade\MappedSide\MappedEntity::class,
@@ -25,8 +25,8 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
 
     public function testManyToManyWithSetNullThrowsExceptionUnsupportedType(): void
     {
-        static::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
-        static::expectExceptionMessage('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association given SET_NULL. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToMany\SetNull\MappedSide\InversedEntity->parents.');
+        self::expectException(SoftDeleteAssociationTypeNotSupportedException::class);
+        self::expectExceptionMessage('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association given SET_NULL. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToMany\SetNull\MappedSide\InversedEntity->parents.');
         $this->getObjectManager([
             SetNull\MappedSide\InversedEntity::class,
             SetNull\MappedSide\MappedEntity::class,
@@ -35,8 +35,8 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
 
     public function testAttributeOnInversedSideAndInversedSideEntityIsSoftDeletedOnlyTheAssociationIsRemoved(): void
     {
-        static::expectException(SoftDeleteManyToManyNotOnMappedSideException::class);
-        static::expectExceptionMessage('StichtingSD\onSoftDelete() should be defined on the mapped/owning side of the ManyToMany relation. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToMany\RemoveAssociationOnly\AttributeDefinedOnInversedSide\InversedEntity->parents.');
+        self::expectException(SoftDeleteManyToManyNotOnMappedSideException::class);
+        self::expectExceptionMessage('StichtingSD\onSoftDelete() should be defined on the mapped/owning side of the ManyToMany relation. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToMany\RemoveAssociationOnly\AttributeDefinedOnInversedSide\InversedEntity->parents.');
         // Construct
         $mappedEntityClass = RemoveAssociationOnly\AttributeDefinedOnInversedSide\MappedEntity::class;
         $inversedEntityClass = RemoveAssociationOnly\AttributeDefinedOnInversedSide\InversedEntity::class;
@@ -63,12 +63,12 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
 
         // Re-fetch
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
         $inversedEntity1 = $inversedEntityRepository->find($inversedEntity1->getId());
-        static::assertInstanceOf($inversedEntityClass, $inversedEntity1);
+        self::assertInstanceOf($inversedEntityClass, $inversedEntity1);
 
         // Remove
-        static::assertCount(2, $mappedEntity->getChildren());
+        self::assertCount(2, $mappedEntity->getChildren());
         $objectManager->remove($inversedEntity1);
         $objectManager->flush();
         $objectManager->clear();
@@ -76,23 +76,23 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
         // Re-fetch
         $objectManager->getFilters()->disable('softdeleteable');
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
         $inversedEntity1 = $inversedEntityRepository->find($inversedEntity1->getId());
-        static::assertInstanceOf($inversedEntityClass, $inversedEntity1);
+        self::assertInstanceOf($inversedEntityClass, $inversedEntity1);
 
         // Check
-        static::assertNotNull($inversedEntity1->getDeletedAt());
-        static::assertNull($mappedEntity->getDeletedAt());
-        static::assertNull($inversedEntity2->getDeletedAt());
-        static::assertCount(0, $inversedEntity1->getParents());
-        static::assertCount(1, $mappedEntity->getChildren());
-        static::assertNotContains($inversedEntity1, $mappedEntity->getChildren());
+        self::assertNotNull($inversedEntity1->getDeletedAt());
+        self::assertNull($mappedEntity->getDeletedAt());
+        self::assertNull($inversedEntity2->getDeletedAt());
+        self::assertCount(0, $inversedEntity1->getParents());
+        self::assertCount(1, $mappedEntity->getChildren());
+        self::assertNotContains($inversedEntity1, $mappedEntity->getChildren());
     }
 
     public function testAttributeOnInversedSideAndMappedSideEntityIsSoftDeletedOnlyTheAssociationIsRemoved(): void
     {
-        static::expectException(SoftDeleteManyToManyNotOnMappedSideException::class);
-        static::expectExceptionMessage('StichtingSD\onSoftDelete() should be defined on the mapped/owning side of the ManyToMany relation. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToMany\RemoveAssociationOnly\AttributeDefinedOnInversedSide\InversedEntity->parents.');
+        self::expectException(SoftDeleteManyToManyNotOnMappedSideException::class);
+        self::expectExceptionMessage('StichtingSD\onSoftDelete() should be defined on the mapped/owning side of the ManyToMany relation. In StichtingSD\SoftDeleteableExtensionBundle\Tests\ManyToMany\RemoveAssociationOnly\AttributeDefinedOnInversedSide\InversedEntity->parents.');
         // Construct
         $mappedEntityClass = RemoveAssociationOnly\AttributeDefinedOnInversedSide\MappedEntity::class;
         $inversedEntityClass = RemoveAssociationOnly\AttributeDefinedOnInversedSide\InversedEntity::class;
@@ -117,10 +117,10 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
 
         // Re-fetch
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
 
         // Remove the parent
-        static::assertCount(2, $mappedEntity->getChildren());
+        self::assertCount(2, $mappedEntity->getChildren());
         $objectManager->remove($mappedEntity);
         $objectManager->flush();
         $objectManager->clear();
@@ -128,15 +128,15 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
         // Re-fetch
         $objectManager->getFilters()->disable('softdeleteable');
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
 
         // Check
-        static::assertNotNull($mappedEntity->getDeletedAt());
-        static::assertCount(0, $mappedEntity->getChildren());
-        static::assertNull($inversedEntity1->getDeletedAt());
-        static::assertNotContains($mappedEntity, $inversedEntity1->getParents());
-        static::assertNull($inversedEntity2->getDeletedAt());
-        static::assertNotContains($mappedEntity, $inversedEntity2->getParents());
+        self::assertNotNull($mappedEntity->getDeletedAt());
+        self::assertCount(0, $mappedEntity->getChildren());
+        self::assertNull($inversedEntity1->getDeletedAt());
+        self::assertNotContains($mappedEntity, $inversedEntity1->getParents());
+        self::assertNull($inversedEntity2->getDeletedAt());
+        self::assertNotContains($mappedEntity, $inversedEntity2->getParents());
     }
 
     public function testAttributeOnMappedSideAndMappedSideEntityIsSoftDeletedTheAssociationIsNotRemoved(): void
@@ -165,10 +165,10 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
 
         // Re-fetch
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
 
         // Remove
-        static::assertCount(2, $mappedEntity->getChildren());
+        self::assertCount(2, $mappedEntity->getChildren());
         $objectManager->remove($mappedEntity);
         $objectManager->flush();
         $objectManager->clear();
@@ -176,21 +176,21 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
         // Re-fetch
         $objectManager->getFilters()->disable('softdeleteable');
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
 
         // Check
-        static::assertNotNull($mappedEntity->getDeletedAt());
-        static::assertCount(2, $mappedEntity->getChildren());
-        static::assertNull($inversedEntity1->getDeletedAt());
+        self::assertNotNull($mappedEntity->getDeletedAt());
+        self::assertCount(2, $mappedEntity->getChildren());
+        self::assertNull($inversedEntity1->getDeletedAt());
         $matched = $inversedEntity1->getParents()->findFirst(
-            fn($key, $parent) => $parent->getId() === $mappedEntity->getId()
+            static fn ($key, $parent) => $parent->getId() === $mappedEntity->getId()
         );
-        static::assertNotNull($matched);
-        static::assertNull($inversedEntity2->getDeletedAt());
+        self::assertNotNull($matched);
+        self::assertNull($inversedEntity2->getDeletedAt());
         $matched = $inversedEntity2->getParents()->findFirst(
-            fn($key, $parent) => $parent->getId() === $mappedEntity->getId()
+            static fn ($key, $parent) => $parent->getId() === $mappedEntity->getId()
         );
-        static::assertNotNull($matched);
+        self::assertNotNull($matched);
     }
 
     public function testAttributeOnMappedSideAndInversedSideEntityIsSoftDeletedOnlyTheAssociationIsRemoved(): void
@@ -220,12 +220,12 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
 
         // Re-fetch
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
         $inversedEntity1 = $inversedEntityRepository->find($inversedEntity1->getId());
-        static::assertInstanceOf($inversedEntityClass, $inversedEntity1);
+        self::assertInstanceOf($inversedEntityClass, $inversedEntity1);
 
         // Remove
-        static::assertCount(2, $mappedEntity->getChildren());
+        self::assertCount(2, $mappedEntity->getChildren());
         $objectManager->remove($inversedEntity1);
         $objectManager->flush();
         $objectManager->clear();
@@ -233,18 +233,18 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
         // Re-fetch
         $objectManager->getFilters()->disable('softdeleteable');
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
         $inversedEntity1 = $inversedEntityRepository->find($inversedEntity1->getId());
-        static::assertInstanceOf($inversedEntityClass, $inversedEntity1);
+        self::assertInstanceOf($inversedEntityClass, $inversedEntity1);
 
         // Check
-        static::assertNotNull($inversedEntity1->getDeletedAt());
-        static::assertCount(0, $inversedEntity1->getParents());
-        static::assertNotContains($mappedEntity, $inversedEntity1->getParents());
-        static::assertNull($inversedEntity2->getDeletedAt());
-        static::assertNull($mappedEntity->getDeletedAt());
-        static::assertNotContains($inversedEntity1, $mappedEntity->getChildren());
-        static::assertCount(1, $mappedEntity->getChildren());
+        self::assertNotNull($inversedEntity1->getDeletedAt());
+        self::assertCount(0, $inversedEntity1->getParents());
+        self::assertNotContains($mappedEntity, $inversedEntity1->getParents());
+        self::assertNull($inversedEntity2->getDeletedAt());
+        self::assertNull($mappedEntity->getDeletedAt());
+        self::assertNotContains($inversedEntity1, $mappedEntity->getChildren());
+        self::assertCount(1, $mappedEntity->getChildren());
     }
 
     public function testWhenAssociationIsUnidirectionalButTheMappedSideHasAnAttributeAndTheTargetEntityIsSoftDeletedTheTargetEntityIsRemovedFromTheCollection(): void
@@ -274,12 +274,12 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
 
         // Re-fetch
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
         $inversedEntity1 = $inversedEntityRepository->find($inversedEntity1->getId());
-        static::assertInstanceOf($inversedEntityClass, $inversedEntity1);
+        self::assertInstanceOf($inversedEntityClass, $inversedEntity1);
 
         // Remove
-        static::assertCount(2, $mappedEntity->getChildren());
+        self::assertCount(2, $mappedEntity->getChildren());
         $objectManager->remove($inversedEntity1);
         $objectManager->flush();
         $objectManager->clear();
@@ -287,15 +287,15 @@ final class SoftDeleteManyToManyTest extends BaseTestCase
         // Re-fetch
         $objectManager->getFilters()->disable('softdeleteable');
         $mappedEntity = $mappedEntityRepository->find($mappedEntity->getId());
-        static::assertInstanceOf($mappedEntityClass, $mappedEntity);
+        self::assertInstanceOf($mappedEntityClass, $mappedEntity);
         $inversedEntity1 = $inversedEntityRepository->find($inversedEntity1->getId());
-        static::assertInstanceOf($inversedEntityClass, $inversedEntity1);
+        self::assertInstanceOf($inversedEntityClass, $inversedEntity1);
 
         // Check
-        static::assertNotNull($inversedEntity1->getDeletedAt());
-        static::assertNull($mappedEntity->getDeletedAt());
-        static::assertNull($inversedEntity2->getDeletedAt());
-        static::assertCount(1, $mappedEntity->getChildren());
-        static::assertNotContains($inversedEntity1, $mappedEntity->getChildren());
+        self::assertNotNull($inversedEntity1->getDeletedAt());
+        self::assertNull($mappedEntity->getDeletedAt());
+        self::assertNull($inversedEntity2->getDeletedAt());
+        self::assertCount(1, $mappedEntity->getChildren());
+        self::assertNotContains($inversedEntity1, $mappedEntity->getChildren());
     }
 }

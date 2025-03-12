@@ -36,7 +36,7 @@ final class MetadataFactory
         ClassMetadataInfo::MANY_TO_MANY => 'ManyToMany',
     ];
 
-    public function __construct(CacheItemPoolInterface $cacheItemPool = null)
+    public function __construct(?CacheItemPoolInterface $cacheItemPool = null)
     {
         null !== $cacheItemPool && $this->cacheItemPool = $cacheItemPool;
     }
@@ -78,7 +78,7 @@ final class MetadataFactory
                 $this->throwIfSoftDeleteTypeIsRemoveAssociationOnlyButAssociationTypeIsNotManyToMany($associationMapping, $type);
                 $this->throwIfSoftDeleteTypeForManyToManyIsDefinedOnInversedSide($associationMapping);
             } catch (SoftDeleteBundleExceptionInterface $e) {
-                throw $e->addMessage(sprintf(' In %s->%s.', $reflClass->getName(), $associationName));
+                throw $e->addMessage(\sprintf(' In %s->%s.', $reflClass->getName(), $associationName));
             }
 
             // Fallback to association name for unidirectional relations.
@@ -123,9 +123,9 @@ final class MetadataFactory
         $type = $associationMapping['type'];
 
         if (!\in_array($type, self::SUPPORTED_ASSOCIATION_TYPES, true)) {
-            $associationHumanReadable = self::ASSOCIATION_TO_STRING_MAP[$type] ?? sprintf('Unknown type: %d', $type);
+            $associationHumanReadable = self::ASSOCIATION_TO_STRING_MAP[$type] ?? \sprintf('Unknown type: %d', $type);
             $associationMapHumanReadable = implode(', ', array_keys(self::SUPPORTED_ASSOCIATION_TYPES));
-            throw new SoftDeleteAssociationTypeNotSupportedException(sprintf('AssociationType unsupported. got: %s, expected one of: %s.', $associationHumanReadable, $associationMapHumanReadable));
+            throw new SoftDeleteAssociationTypeNotSupportedException(\sprintf('AssociationType unsupported. got: %s, expected one of: %s.', $associationHumanReadable, $associationMapHumanReadable));
         }
 
         return $type;
@@ -136,7 +136,7 @@ final class MetadataFactory
         $arguments = $onSoftDeleteAttribute->getArguments();
         $type = $arguments[0] ?? $arguments['type'] ?? null;
         if (!$type instanceof Type) {
-            throw new SoftDeleteUnknownTypeException(sprintf('Invalid type given to onSoftDelete attribute, expected one of %s.', Type::class));
+            throw new SoftDeleteUnknownTypeException(\sprintf('Invalid type given to onSoftDelete attribute, expected one of %s.', Type::class));
         }
 
         return $type;
@@ -147,7 +147,7 @@ final class MetadataFactory
         $attribute = $targetEntityReflClass->getAttributes(SoftDeleteable::class)[0] ?? null;
 
         if (null === $attribute) {
-            throw new SoftDeleteClassHasNoGedmoAttributeException(sprintf('Defined onSoftDelete(Type::CASCADE) but the associated class %s has no Gedmo softdelete attribute.', $targetEntityReflClass->getName()));
+            throw new SoftDeleteClassHasNoGedmoAttributeException(\sprintf('Defined onSoftDelete(Type::CASCADE) but the associated class %s has no Gedmo softdelete attribute.', $targetEntityReflClass->getName()));
         }
 
         return $attribute;
@@ -187,13 +187,13 @@ final class MetadataFactory
             return;
         }
 
-        throw new SoftDeleteAssociationTypeNotSupportedException(sprintf('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association given %s.', $type->value));
+        throw new SoftDeleteAssociationTypeNotSupportedException(\sprintf('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association given %s.', $type->value));
     }
 
     private function throwIfSoftDeleteTypeIsRemoveAssociationOnlyButAssociationTypeIsNotManyToMany(array $associationMapping, Type $type): void
     {
         if (ClassMetadataInfo::MANY_TO_MANY !== $associationMapping['type'] && Type::REMOVE_ASSOCIATION_ONLY === $type) {
-            throw new SoftDeleteAssociationTypeNotSupportedException(sprintf('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations given %s.', $type->value));
+            throw new SoftDeleteAssociationTypeNotSupportedException(\sprintf('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations given %s.', $type->value));
         }
     }
 }

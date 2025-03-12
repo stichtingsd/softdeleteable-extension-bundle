@@ -36,7 +36,7 @@
         "symfony/phpunit-bridge": "^6.1",
         "doctrine/cache": "^2.0",
         "doctrine/dbal": "^3.2",
-        "friendsofphp/php-cs-fixer": "dev-master"
+        "friendsofphp/php-cs-fixer": "^3.71"
     },
     "minimum-stability": "dev",
     "extra": {

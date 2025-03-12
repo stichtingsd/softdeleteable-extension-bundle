@@ -13,7 +13,7 @@ class OnSoftDeleteValidatorEventSubscriber
     use ContainerAwareTrait;
 
     public function __construct(
-        private MetadataFactory $metadataFactory
+        private MetadataFactory $metadataFactory,
     ) {
     }
 

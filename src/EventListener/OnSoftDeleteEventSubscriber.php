@@ -29,7 +29,7 @@ class OnSoftDeleteEventSubscriber
     use ContainerAwareTrait;
 
     public function __construct(
-        private MetadataFactory $metadataFactory
+        private MetadataFactory $metadataFactory,
     ) {
     }
 
@@ -75,7 +75,7 @@ class OnSoftDeleteEventSubscriber
                     $eventObject,
                     $cachedProperty,
                     $objectManager
-                )
+                ),
             };
         }
     }
@@ -98,9 +98,9 @@ class OnSoftDeleteEventSubscriber
             $associatedObjects = $objectManager->createQueryBuilder()
                 ->select('e')
                 ->from($metaData['associatedTo'], 'e')
-                ->innerJoin(sprintf('e.%s', $metaData['associatedToProperty']), 'association')
+                ->innerJoin(\sprintf('e.%s', $metaData['associatedToProperty']), 'association')
                 ->addSelect('association')
-                ->andWhere(sprintf(':entity MEMBER OF e.%s', $metaData['associatedToProperty']))
+                ->andWhere(\sprintf(':entity MEMBER OF e.%s', $metaData['associatedToProperty']))
                 ->setParameter('entity', $eventObject)
                 ->getQuery()
                 ->getResult()
@@ -135,7 +135,7 @@ class OnSoftDeleteEventSubscriber
             $collection = $propertyAccessor->getValue($eventObject, $metaData['targetEntityProperty']);
             $collection->clear();
         } catch (\Exception $e) {
-            throw new SoftDeletePropertyAccessorNotFoundException(sprintf('No accessor found for %s in %s', $metaData['associatedToProperty'], $eventObject::class), previous: $e);
+            throw new SoftDeletePropertyAccessorNotFoundException(\sprintf('No accessor found for %s in %s', $metaData['associatedToProperty'], $eventObject::class), previous: $e);
         }
     }
 
