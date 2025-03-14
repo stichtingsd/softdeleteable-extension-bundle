@@ -126,6 +126,10 @@ class OnSoftDeleteEventSubscriber
 
                 $association = $propertyAccessor->getValue($object, $metaData['associatedToProperty']);
                 $association->removeElement($eventObject);
+
+                $uow = $objectManager->getUnitOfWork();
+                \assert($uow instanceof UnitOfWork);
+                $uow->getCollectionPersister($metaData)->update($association);
             }
 
             return;
@@ -133,7 +137,18 @@ class OnSoftDeleteEventSubscriber
 
         try {
             $collection = $propertyAccessor->getValue($eventObject, $metaData['targetEntityProperty']);
-            $collection->clear();
+            if ($metaData['isOwner'] ?? false) {
+                $collection->clear();
+            } else {
+                foreach ($collection as $relatedEntity) {
+                    $inverseProperty = $metaData['associatedToProperty'];
+                    $inverseCollection = $propertyAccessor->getValue($relatedEntity, $inverseProperty);
+                    $inverseCollection->removeElement($eventObject);
+                    $uow = $objectManager->getUnitOfWork();
+                    \assert($uow instanceof UnitOfWork);
+                    $uow->getCollectionPersister($metaData)->update($inverseCollection);
+                }
+            }
         } catch (\Exception $e) {
             throw new SoftDeletePropertyAccessorNotFoundException(\sprintf('No accessor found for %s in %s', $metaData['associatedToProperty'], $eventObject::class), previous: $e);
         }
