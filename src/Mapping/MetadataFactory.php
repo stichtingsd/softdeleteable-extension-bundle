@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace StichtingSD\SoftDeleteableExtensionBundle\Mapping;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\Persistence\Mapping\ClassMetadata;
 use Doctrine\Persistence\ObjectManager;
@@ -59,6 +60,7 @@ final class MetadataFactory
             try {
                 $reflProperty = $reflClass->getProperty($associationName);
                 $onSoftDeleteAttribute = $this->extractSoftDeleteAttribute($reflProperty);
+                \assert($classMetaData instanceof ClassMetadataInfo);
                 $associationMapping = $classMetaData->getAssociationMapping($associationName);
                 $associationTargetClass = $classMetaData->getAssociationTargetClass($associationMapping['fieldName']);
 
@@ -97,6 +99,7 @@ final class MetadataFactory
 
     public function computeMetadata(ObjectManager $objectManager): void
     {
+        \assert($objectManager instanceof EntityManagerInterface);
         $allClassNames = $objectManager->getConfiguration()
             ->getMetadataDriverImpl()
             ->getAllClassNames()

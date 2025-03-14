@@ -13,6 +13,7 @@ namespace StichtingSD\SoftDeleteableExtensionBundle\EventListener;
 
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\AbstractQuery;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\UnitOfWork;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
@@ -80,6 +81,7 @@ class OnSoftDeleteEventSubscriber
     private function removeAssociationsFromManyToMany(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
         $propertyAccessor = PropertyAccess::createPropertyAccessor();
+        \assert($objectManager instanceof EntityManagerInterface);
 
         // Unidirectional defined the ManyToMany on one side only, so there is no inversedBy or mappedBy
         // Because unidirectional is always defined on the owning side.
@@ -145,6 +147,7 @@ class OnSoftDeleteEventSubscriber
 
     private function setNullAssociatedObjects(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
+        \assert($objectManager instanceof EntityManagerInterface);
         $className = $metaData['associatedTo'];
         $propertyName = $metaData['associatedToProperty'];
 
@@ -184,6 +187,8 @@ class OnSoftDeleteEventSubscriber
 
     private function cascadeAssociatedObjects(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
+        \assert($objectManager instanceof EntityManagerInterface);
+
         // Field name is set in the targetEntity class, when Entity1 as #[onSoftDelete()] on a property.
         // We should grab the SoftDelete fieldName from Gedmo.
         $className = $metaData['associatedTo'];
