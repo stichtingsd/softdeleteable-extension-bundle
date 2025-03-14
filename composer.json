@@ -1,7 +1,7 @@
 {
     "name": "stichtingsd/soft-deleteable-extension-bundle",
     "description": "Extension to Gedmo Softdeleteable.",
-    "type": "library",
+    "type": "symfony-bundle",
     "license": "MIT",
     "authors": [
         {
