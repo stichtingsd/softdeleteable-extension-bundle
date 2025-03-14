@@ -84,14 +84,6 @@ class OnSoftDeleteEventSubscriber
         // Unidirectional defined the ManyToMany on one side only, so there is no inversedBy or mappedBy
         // Because unidirectional is always defined on the owning side.
         if ($metaData['isUnidirectional']) {
-            // IMPORTANT! TODO! BUG!
-            // Currently a bug and I don't understand why the code bellow doesn't work.
-            // For some reason, the query executed bellow does return an entity but the associated entity
-            // is removed from the collection, thus I can't remove it using removeElement(). Weird.
-            // I understand why, Doctrine probably removes the ManyToMany relation automaticly, and Gedmo reverts this deletion.
-            // Well, I've tried using the POST_SOFT_DELETE event but that does not matter.
-            // See SoftDeleteManyToManyTest (skipped one's).
-            // Call $objectManager->clear(); and add a count and you see it works.
             $associatedObjects = $objectManager->createQueryBuilder()
                 ->select('e')
                 ->from($metaData['associatedTo'], 'e')
