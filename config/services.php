@@ -23,7 +23,6 @@ return static function (ContainerConfigurator $container) {
             'stichtingsd.soft_deletable_extension.subscriber',
             StichtingSD\SoftDeleteableExtensionBundle\EventListener\OnSoftDeleteEventSubscriber::class,
         )
-        ->call('setContainer', [service('service_container')])
         ->arg(0, service('stichtingsd.soft_deletable_extension.metadata_factory'))
         ->tag('doctrine.event_listener', ['event' => SoftDeleteableListener::PRE_SOFT_DELETE])
     ;
@@ -34,7 +33,6 @@ return static function (ContainerConfigurator $container) {
             'stichtingsd.soft_deletable_extension.validator',
             StichtingSD\SoftDeleteableExtensionBundle\EventListener\OnSoftDeleteValidatorEventSubscriber::class,
         )
-        ->call('setContainer', [service('service_container')])
         ->arg(0, service('stichtingsd.soft_deletable_extension.metadata_factory'))
         ->tag('doctrine.event_listener', ['event' => Events::loadClassMetadata])
     ;

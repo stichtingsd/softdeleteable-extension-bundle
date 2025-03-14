@@ -21,13 +21,10 @@ use Gedmo\SoftDeleteable\SoftDeleteableListener as GedmoSoftDeleteableListener;
 use StichtingSD\SoftDeleteableExtensionBundle\Exception\SoftDeletePropertyAccessorNotFoundException;
 use StichtingSD\SoftDeleteableExtensionBundle\Mapping\MetadataFactory;
 use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Type;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
 class OnSoftDeleteEventSubscriber
 {
-    use ContainerAwareTrait;
-
     public function __construct(
         private MetadataFactory $metadataFactory,
     ) {
