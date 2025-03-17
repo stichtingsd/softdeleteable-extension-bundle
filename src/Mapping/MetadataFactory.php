@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace StichtingSD\SoftDeleteableExtensionBundle\Mapping;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use Doctrine\ORM\Mapping\AssociationMapping;
+use Doctrine\ORM\Mapping\ClassMetadata as ORMClassMetadata;
 use Doctrine\Persistence\Mapping\ClassMetadata;
 use Doctrine\Persistence\ObjectManager;
 use Gedmo\Mapping\Annotation\SoftDeleteable;
@@ -23,18 +24,18 @@ final class MetadataFactory
     use MetadataCacheAwareTrait;
 
     private const SUPPORTED_ASSOCIATION_TYPES = [
-        'OneToOne' => ClassMetadataInfo::ONE_TO_ONE,
-        'ManyToOne' => ClassMetadataInfo::MANY_TO_ONE,
-        'ManyToMany' => ClassMetadataInfo::MANY_TO_MANY,
+        'OneToOne' => ORMClassMetadata::ONE_TO_ONE,
+        'ManyToOne' => ORMClassMetadata::MANY_TO_ONE,
+        'ManyToMany' => ORMClassMetadata::MANY_TO_MANY,
     ];
 
     private const ASSOCIATION_TO_STRING_MAP = [
-        ClassMetadataInfo::ONE_TO_ONE => 'OneToOne',
-        ClassMetadataInfo::MANY_TO_ONE => 'ManyToOne',
-        ClassMetadataInfo::TO_ONE => 'ToOne',
-        ClassMetadataInfo::ONE_TO_MANY => 'OneToMany',
-        ClassMetadataInfo::TO_MANY => 'ToMany',
-        ClassMetadataInfo::MANY_TO_MANY => 'ManyToMany',
+        ORMClassMetadata::ONE_TO_ONE => 'OneToOne',
+        ORMClassMetadata::MANY_TO_ONE => 'ManyToOne',
+        ORMClassMetadata::TO_ONE => 'ToOne',
+        ORMClassMetadata::ONE_TO_MANY => 'OneToMany',
+        ORMClassMetadata::TO_MANY => 'ToMany',
+        ORMClassMetadata::MANY_TO_MANY => 'ManyToMany',
     ];
 
     public function __construct(?CacheItemPoolInterface $cacheItemPool = null)
@@ -60,7 +61,7 @@ final class MetadataFactory
             try {
                 $reflProperty = $reflClass->getProperty($associationName);
                 $onSoftDeleteAttribute = $this->extractSoftDeleteAttribute($reflProperty);
-                \assert($classMetaData instanceof ClassMetadataInfo);
+                \assert($classMetaData instanceof ORMClassMetadata);
                 $associationMapping = $classMetaData->getAssociationMapping($associationName);
                 $associationTargetClass = $classMetaData->getAssociationTargetClass($associationMapping['fieldName']);
 
@@ -73,8 +74,7 @@ final class MetadataFactory
                 $associationTargetReflClass = new \ReflectionClass($associationTargetClass);
                 $associationTargetClassGedmoAttr = $this->extractGedmoSoftDeleteAttributeFrom($associationTargetReflClass);
                 $targetEntitySoftDeleteFieldName = $this->extractFieldName($associationTargetClassGedmoAttr);
-                $targetEntityProperty = $associationMapping['mappedBy'] ?: $associationMapping['inversedBy'];
-                $isUnidirectional = empty($associationMapping['mappedBy']) && empty($associationMapping['inversedBy']);
+                $targetEntityProperty = $associationMapping->isOwningSide() ? $associationMapping->inversedBy : $associationMapping->mappedBy;
 
                 $this->throwIfAssociationTypeIsManyToManyButSoftDeleteTypeIsNotRemoveAssociationOnly($associationMapping, $type);
                 $this->throwIfSoftDeleteTypeIsRemoveAssociationOnlyButAssociationTypeIsNotManyToMany($associationMapping, $type);
@@ -91,7 +91,7 @@ final class MetadataFactory
                 'targetEntityProperty' => $targetEntityProperty,
                 'targetEntitySoftDeleteFieldName' => $targetEntitySoftDeleteFieldName,
                 'associationMappingType' => $associationMappingType,
-                'isUnidirectional' => $isUnidirectional,
+                'isOwningSide' => $associationMapping->isOwningSide(),
                 'type' => $type->value,
             ]);
         }
@@ -121,9 +121,9 @@ final class MetadataFactory
         return $attribute;
     }
 
-    private function extractAssociationType(array $associationMapping): int
+    private function extractAssociationType(AssociationMapping $associationMapping): int
     {
-        $type = $associationMapping['type'];
+        $type = $associationMapping->type();
 
         if (!\in_array($type, self::SUPPORTED_ASSOCIATION_TYPES, true)) {
             $associationHumanReadable = self::ASSOCIATION_TO_STRING_MAP[$type] ?? \sprintf('Unknown type: %d', $type);
@@ -167,22 +167,22 @@ final class MetadataFactory
         return $fieldName;
     }
 
-    private function throwIfSoftDeleteTypeForManyToManyIsDefinedOnInversedSide(array $associationMapping): void
+    private function throwIfSoftDeleteTypeForManyToManyIsDefinedOnInversedSide(AssociationMapping $associationMapping): void
     {
-        if (ClassMetadataInfo::MANY_TO_MANY !== $associationMapping['type']) {
+        if (ORMClassMetadata::MANY_TO_MANY !== $associationMapping->type()) {
             return;
         }
 
-        if (true === $associationMapping['isOwningSide']) {
+        if (true === $associationMapping->isOwningSide()) {
             return;
         }
 
         throw new SoftDeleteManyToManyNotOnMappedSideException('StichtingSD\onSoftDelete() should be defined on the mapped/owning side of the ManyToMany relation.');
     }
 
-    private function throwIfAssociationTypeIsManyToManyButSoftDeleteTypeIsNotRemoveAssociationOnly(array $associationMapping, Type $type): void
+    private function throwIfAssociationTypeIsManyToManyButSoftDeleteTypeIsNotRemoveAssociationOnly(AssociationMapping $associationMapping, Type $type): void
     {
-        if (ClassMetadataInfo::MANY_TO_MANY !== $associationMapping['type']) {
+        if (ORMClassMetadata::MANY_TO_MANY !== $associationMapping->type()) {
             return;
         }
 
@@ -193,9 +193,9 @@ final class MetadataFactory
         throw new SoftDeleteAssociationTypeNotSupportedException(\sprintf('Expected Type::REMOVE_ASSOCIATION_ONLY for ManyToMany association given %s.', $type->value));
     }
 
-    private function throwIfSoftDeleteTypeIsRemoveAssociationOnlyButAssociationTypeIsNotManyToMany(array $associationMapping, Type $type): void
+    private function throwIfSoftDeleteTypeIsRemoveAssociationOnlyButAssociationTypeIsNotManyToMany(AssociationMapping $associationMapping, Type $type): void
     {
-        if (ClassMetadataInfo::MANY_TO_MANY !== $associationMapping['type'] && Type::REMOVE_ASSOCIATION_ONLY === $type) {
+        if (ORMClassMetadata::MANY_TO_MANY !== $associationMapping->type() && Type::REMOVE_ASSOCIATION_ONLY === $type) {
             throw new SoftDeleteAssociationTypeNotSupportedException(\sprintf('Type::REMOVE_ASSOCIATION_ONLY applies only to ManyToMany associations given %s.', $type->value));
         }
     }

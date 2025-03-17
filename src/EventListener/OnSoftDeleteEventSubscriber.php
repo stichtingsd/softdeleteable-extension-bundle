@@ -14,7 +14,7 @@ namespace StichtingSD\SoftDeleteableExtensionBundle\EventListener;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Persistence\ObjectManager;
@@ -52,7 +52,7 @@ class OnSoftDeleteEventSubscriber
 
             // ManyToMany is always CASCADE with one but. We only want to remove the association itself instead of the other entity.
             // This is because the other entity can still be associated to other objects and by removing the associated object could cause unintended removals.
-            if (ClassMetadataInfo::MANY_TO_MANY === $associationMappingType && Type::REMOVE_ASSOCIATION_ONLY === $type) {
+            if (ClassMetadata::MANY_TO_MANY === $associationMappingType && Type::REMOVE_ASSOCIATION_ONLY === $type) {
                 $this->removeAssociationsFromManyToMany(
                     $eventObject,
                     $cachedProperty,
@@ -83,52 +83,9 @@ class OnSoftDeleteEventSubscriber
         $propertyAccessor = PropertyAccess::createPropertyAccessor();
         \assert($objectManager instanceof EntityManagerInterface);
 
-        // Unidirectional defined the ManyToMany on one side only, so there is no inversedBy or mappedBy
-        // Because unidirectional is always defined on the owning side.
-        if ($metaData['isUnidirectional']) {
-            $associatedObjects = $objectManager->createQueryBuilder()
-                ->select('e')
-                ->from($metaData['associatedTo'], 'e')
-                ->innerJoin(\sprintf('e.%s', $metaData['associatedToProperty']), 'association')
-                ->addSelect('association')
-                ->andWhere(\sprintf(':entity MEMBER OF e.%s', $metaData['associatedToProperty']))
-                ->setParameter('entity', $eventObject)
-                ->getQuery()
-                ->getResult()
-            ;
-
-            // For BULK deleting this is the best option we've got.
-            // But it's too risky since we're grabbing the first joinColumn.
-            // Executing plain SQL queries is highly discouraged by Doctrine.
-            // $connection = $objectManager->getConnection();
-            // $joinTableName = $associationMapping['joinTable']['name'] ?? null;
-            // $inverseColumnName = $associationMapping['joinTable']['joinColumns'][0]['name'] ?? null;
-            // $statement = $connection->prepare(sprintf('DELETE FROM %s WHERE %s IN (%s)', $joinTableName, $inverseColumnName, implode(',', $objectsAssociated)));
-            // $statement->execute();
-
-            $uow = $objectManager->getUnitOfWork();
-            // For now, just loop all the related entities and remove it from the collection.
-            foreach ($associatedObjects as $object) {
-                // Gedmo handles re-computation for the removed item but not for the related items.
-                // Since doctrine by default removed the many-to-many association on removal and Gedmo only re-computes the deleted entity.
-                // It doesn't revert the changes made in the parent entity.
-                $meta = $objectManager->getClassMetadata($object::class);
-                $uow->computeChangeSet($meta, $object);
-
-                $association = $propertyAccessor->getValue($object, $metaData['associatedToProperty']);
-                $association->removeElement($eventObject);
-
-                $uow = $objectManager->getUnitOfWork();
-                \assert($uow instanceof UnitOfWork);
-                $uow->getCollectionPersister($metaData)->update($association);
-            }
-
-            return;
-        }
-
         try {
             $collection = $propertyAccessor->getValue($eventObject, $metaData['targetEntityProperty']);
-            if ($metaData['isOwner'] ?? false) {
+            if ($metaData['isOwningSide']) {
                 $collection->clear();
             } else {
                 foreach ($collection as $relatedEntity) {

@@ -14,7 +14,7 @@ trait BaseEntity
     #[ORM\Column]
     private ?int $id;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeInterface $deletedAt = null;
 
     public function getId(): ?int
