@@ -75,6 +75,7 @@ final class MetadataFactory
                 $associationTargetClassGedmoAttr = $this->extractGedmoSoftDeleteAttributeFrom($associationTargetReflClass);
                 $targetEntitySoftDeleteFieldName = $this->extractFieldName($associationTargetClassGedmoAttr);
                 $targetEntityProperty = $associationMapping->isOwningSide() ? $associationMapping->inversedBy : $associationMapping->mappedBy;
+                $isUnidirectional = empty($associationMapping['mappedBy']) && empty($associationMapping['inversedBy']);
 
                 $this->throwIfAssociationTypeIsManyToManyButSoftDeleteTypeIsNotRemoveAssociationOnly($associationMapping, $type);
                 $this->throwIfSoftDeleteTypeIsRemoveAssociationOnlyButAssociationTypeIsNotManyToMany($associationMapping, $type);
@@ -92,6 +93,7 @@ final class MetadataFactory
                 'targetEntitySoftDeleteFieldName' => $targetEntitySoftDeleteFieldName,
                 'associationMappingType' => $associationMappingType,
                 'isOwningSide' => $associationMapping->isOwningSide(),
+                'isUnidirectional' => $isUnidirectional,
                 'type' => $type->value,
             ]);
         }

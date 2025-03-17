@@ -82,20 +82,57 @@ class OnSoftDeleteEventSubscriber
     {
         $propertyAccessor = PropertyAccess::createPropertyAccessor();
         \assert($objectManager instanceof EntityManagerInterface);
+        $uow = $objectManager->getUnitOfWork();
+        \assert($uow instanceof UnitOfWork);
+
+
+        // Unidirectional defined the ManyToMany on one side only, so there is no inversedBy or mappedBy
+        // Because unidirectional is always defined on the owning side.
+        if ($metaData['isUnidirectional']) {
+            $associatedObjects = $objectManager->createQueryBuilder()
+                ->select('e')
+                ->from($metaData['associatedTo'], 'e')
+                ->innerJoin(\sprintf('e.%s', $metaData['associatedToProperty']), 'association')
+                ->addSelect('association')
+                ->andWhere(\sprintf(':entity MEMBER OF e.%s', $metaData['associatedToProperty']))
+                ->setParameter('entity', $eventObject)
+                ->getQuery()
+                ->getResult()
+            ;
+
+            // For BULK deleting this is the best option we've got.
+            // But it's too risky since we're grabbing the first joinColumn.
+            // Executing plain SQL queries is highly discouraged by Doctrine.
+            // $connection = $objectManager->getConnection();
+            // $joinTableName = $associationMapping['joinTable']['name'] ?? null;
+            // $inverseColumnName = $associationMapping['joinTable']['joinColumns'][0]['name'] ?? null;
+            // $statement = $connection->prepare(sprintf('DELETE FROM %s WHERE %s IN (%s)', $joinTableName, $inverseColumnName, implode(',', $objectsAssociated)));
+            // $statement->execute();
+
+            $uow = $objectManager->getUnitOfWork();
+            // For now, just loop all the related entities and remove it from the collection.
+            foreach ($associatedObjects as $object) {
+                // Gedmo handles re-computation for the removed item but not for the related items.
+                // Since doctrine by default removed the many-to-many association on removal and Gedmo only re-computes the deleted entity.
+                // It doesn't revert the changes made in the parent entity.
+                $meta = $objectManager->getClassMetadata($object::class);
+                $uow->computeChangeSet($meta, $object);
+
+                $association = $propertyAccessor->getValue($object, $metaData['associatedToProperty']);
+                $association->removeElement($eventObject);
+                $uow->getCollectionPersister($association->getMapping())->update($association);
+            }
+
+            return;
+        }
 
         try {
             $collection = $propertyAccessor->getValue($eventObject, $metaData['targetEntityProperty']);
-            if ($metaData['isOwningSide']) {
-                $collection->clear();
-            } else {
-                foreach ($collection as $relatedEntity) {
-                    $inverseProperty = $metaData['associatedToProperty'];
-                    $inverseCollection = $propertyAccessor->getValue($relatedEntity, $inverseProperty);
-                    $inverseCollection->removeElement($eventObject);
-                    $uow = $objectManager->getUnitOfWork();
-                    \assert($uow instanceof UnitOfWork);
-                    $uow->getCollectionPersister($metaData)->update($inverseCollection);
-                }
+            foreach ($collection as $relatedEntity) {
+                $inverseProperty = $metaData['associatedToProperty'];
+                $inverseCollection = $propertyAccessor->getValue($relatedEntity, $inverseProperty);
+                $inverseCollection->removeElement($eventObject);
+                $uow->getCollectionPersister($inverseCollection->getMapping())->update($inverseCollection);
             }
         } catch (\Exception $e) {
             throw new SoftDeletePropertyAccessorNotFoundException(\sprintf('No accessor found for %s in %s', $metaData['associatedToProperty'], $eventObject::class), previous: $e);
