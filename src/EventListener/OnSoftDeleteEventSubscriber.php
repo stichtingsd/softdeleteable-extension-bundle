@@ -85,7 +85,6 @@ class OnSoftDeleteEventSubscriber
         $uow = $objectManager->getUnitOfWork();
         \assert($uow instanceof UnitOfWork);
 
-
         // Unidirectional defined the ManyToMany on one side only, so there is no inversedBy or mappedBy
         // Because unidirectional is always defined on the owning side.
         if ($metaData['isUnidirectional']) {
