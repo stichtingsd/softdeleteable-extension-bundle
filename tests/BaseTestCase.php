@@ -60,8 +60,8 @@ abstract class BaseTestCase extends TestCase
         $config->addFilter('softdeleteable', SoftDeleteableFilter::class);
         $evm->addEventSubscriber(new SoftDeleteableListener());
 
-        $connection = DriverManager::getConnection($conn, $config, $evm);
-        $entityManager = new EntityManager($connection, $config);
+        $connection = DriverManager::getConnection($conn, $config);
+        $entityManager = new EntityManager($connection, $config, $evm);
         $entityManager->getFilters()->enable('softdeleteable');
 
         $schema = array_map(static fn ($class) => $entityManager->getClassMetadata($class), $entities);

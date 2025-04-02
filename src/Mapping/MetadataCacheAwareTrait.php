@@ -19,7 +19,7 @@ trait MetadataCacheAwareTrait
     {
         $className = str_replace('\\', '_', $className);
 
-        return sprintf('stichtingsd_sdmtd_%s', $className);
+        return \sprintf('stichtingsd_sdmtd_%s', $className);
     }
 
     public function hasCachedMetadataForClass(string $className): bool

@@ -31,4 +31,6 @@ return (new PhpCsFixer\Config())
         'php_unit_test_class_requires_covers' => false,
         '@Symfony' => true,
     ])
-    ->setFinder($finder)->setRiskyAllowed(true)->setUsingCache(true);
+    ->setFinder($finder)->setRiskyAllowed(true)->setUsingCache(true)
+    ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
+;

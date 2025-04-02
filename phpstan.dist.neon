@@ -1,0 +1,10 @@
+includes:
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+    - phpstan-baseline.neon
+
+parameters:
+    paths:
+        - src
+        - tests
+    level: 2

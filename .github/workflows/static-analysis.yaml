@@ -1,0 +1,33 @@
+name: Static Analysis
+
+on:
+  pull_request:
+    branches: [ 'master' ]
+  push:
+
+jobs:
+  phpstan:
+    name: PHPStan (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        php-version:
+          - '8.4'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          coverage: none
+          php-version: ${{ matrix.php-version }}
+          tools: cs2pr
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Run PHPStan
+        run: 'bin/phpstan analyse --error-format=checkstyle | cs2pr'

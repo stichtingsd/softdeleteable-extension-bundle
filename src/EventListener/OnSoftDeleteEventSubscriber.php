@@ -13,7 +13,8 @@ namespace StichtingSD\SoftDeleteableExtensionBundle\EventListener;
 
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\AbstractQuery;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Persistence\ObjectManager;
@@ -21,15 +22,12 @@ use Gedmo\SoftDeleteable\SoftDeleteableListener as GedmoSoftDeleteableListener;
 use StichtingSD\SoftDeleteableExtensionBundle\Exception\SoftDeletePropertyAccessorNotFoundException;
 use StichtingSD\SoftDeleteableExtensionBundle\Mapping\MetadataFactory;
 use StichtingSD\SoftDeleteableExtensionBundle\Mapping\Type;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
 class OnSoftDeleteEventSubscriber
 {
-    use ContainerAwareTrait;
-
     public function __construct(
-        private MetadataFactory $metadataFactory
+        private MetadataFactory $metadataFactory,
     ) {
     }
 
@@ -54,7 +52,7 @@ class OnSoftDeleteEventSubscriber
 
             // ManyToMany is always CASCADE with one but. We only want to remove the association itself instead of the other entity.
             // This is because the other entity can still be associated to other objects and by removing the associated object could cause unintended removals.
-            if (ClassMetadataInfo::MANY_TO_MANY === $associationMappingType && Type::REMOVE_ASSOCIATION_ONLY === $type) {
+            if (ClassMetadata::MANY_TO_MANY === $associationMappingType && Type::REMOVE_ASSOCIATION_ONLY === $type) {
                 $this->removeAssociationsFromManyToMany(
                     $eventObject,
                     $cachedProperty,
@@ -75,7 +73,7 @@ class OnSoftDeleteEventSubscriber
                     $eventObject,
                     $cachedProperty,
                     $objectManager
-                )
+                ),
             };
         }
     }
@@ -83,24 +81,19 @@ class OnSoftDeleteEventSubscriber
     private function removeAssociationsFromManyToMany(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
         $propertyAccessor = PropertyAccess::createPropertyAccessor();
+        \assert($objectManager instanceof EntityManagerInterface);
+        $uow = $objectManager->getUnitOfWork();
+        \assert($uow instanceof UnitOfWork);
 
         // Unidirectional defined the ManyToMany on one side only, so there is no inversedBy or mappedBy
         // Because unidirectional is always defined on the owning side.
         if ($metaData['isUnidirectional']) {
-            // IMPORTANT! TODO! BUG!
-            // Currently a bug and I don't understand why the code bellow doesn't work.
-            // For some reason, the query executed bellow does return an entity but the associated entity
-            // is removed from the collection, thus I can't remove it using removeElement(). Weird.
-            // I understand why, Doctrine probably removes the ManyToMany relation automaticly, and Gedmo reverts this deletion.
-            // Well, I've tried using the POST_SOFT_DELETE event but that does not matter.
-            // See SoftDeleteManyToManyTest (skipped one's).
-            // Call $objectManager->clear(); and add a count and you see it works.
             $associatedObjects = $objectManager->createQueryBuilder()
                 ->select('e')
                 ->from($metaData['associatedTo'], 'e')
-                ->innerJoin(sprintf('e.%s', $metaData['associatedToProperty']), 'association')
+                ->innerJoin(\sprintf('e.%s', $metaData['associatedToProperty']), 'association')
                 ->addSelect('association')
-                ->andWhere(sprintf(':entity MEMBER OF e.%s', $metaData['associatedToProperty']))
+                ->andWhere(\sprintf(':entity MEMBER OF e.%s', $metaData['associatedToProperty']))
                 ->setParameter('entity', $eventObject)
                 ->getQuery()
                 ->getResult()
@@ -126,6 +119,7 @@ class OnSoftDeleteEventSubscriber
 
                 $association = $propertyAccessor->getValue($object, $metaData['associatedToProperty']);
                 $association->removeElement($eventObject);
+                $uow->getCollectionPersister($association->getMapping())->update($association);
             }
 
             return;
@@ -133,14 +127,20 @@ class OnSoftDeleteEventSubscriber
 
         try {
             $collection = $propertyAccessor->getValue($eventObject, $metaData['targetEntityProperty']);
-            $collection->clear();
+            foreach ($collection as $relatedEntity) {
+                $inverseProperty = $metaData['associatedToProperty'];
+                $inverseCollection = $propertyAccessor->getValue($relatedEntity, $inverseProperty);
+                $inverseCollection->removeElement($eventObject);
+                $uow->getCollectionPersister($inverseCollection->getMapping())->update($inverseCollection);
+            }
         } catch (\Exception $e) {
-            throw new SoftDeletePropertyAccessorNotFoundException(sprintf('No accessor found for %s in %s', $metaData['associatedToProperty'], $eventObject::class), previous: $e);
+            throw new SoftDeletePropertyAccessorNotFoundException(\sprintf('No accessor found for %s in %s', $metaData['associatedToProperty'], $eventObject::class), previous: $e);
         }
     }
 
     private function setNullAssociatedObjects(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
+        \assert($objectManager instanceof EntityManagerInterface);
         $className = $metaData['associatedTo'];
         $propertyName = $metaData['associatedToProperty'];
 
@@ -180,6 +180,8 @@ class OnSoftDeleteEventSubscriber
 
     private function cascadeAssociatedObjects(object $eventObject, array $metaData, ObjectManager $objectManager): void
     {
+        \assert($objectManager instanceof EntityManagerInterface);
+
         // Field name is set in the targetEntity class, when Entity1 as #[onSoftDelete()] on a property.
         // We should grab the SoftDelete fieldName from Gedmo.
         $className = $metaData['associatedTo'];
